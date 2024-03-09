@@ -1,6 +1,8 @@
 # sonivox-example
 sonivoxrender utility, and example of sonivox library
 
+[![Build on Linux](https://github.com/pedrolcl/sonivox-example/actions/workflows/linux-build.yml/badge.svg)](https://github.com/pedrolcl/sonivox-example/actions/workflows/linux-build.yml)
+
 This is a simple command line utility to render standard MIDI files into raw PCM audio streams. This utility can be compiled after building and installing sonivox in some prefix like `/usr`, `/usr/local`, or `$HOME/Sonivox`.
 The CMake script contains three alternatives: using CMake only, using `pkg-config` and using sonivox as a subdirectory.
 
