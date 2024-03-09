@@ -27,6 +27,7 @@ jobs:
       with:
         github-token: ${{ secrets.GH_PAT }} # token with actions:read permissions on target repo
         repository: pedrolcl/sonivox
+        run-id: 8195750029
     
     - name: Display structure of downloaded files
       run: ls -R ${{env.SONIVOX_LOCATION}}
