@@ -26,10 +26,11 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: SonivoxV3
-        github-token: ${{ secrets.GH_PAT }} # token with actions:read permissions on target repo
+        path: SonivoxV3.tar
+        github-token: ${{secrets.GH_PAT}}
         repository: pedrolcl/sonivox
-        #run-id: 8195750029
-    
+        run-id: 8195750029
+
     - name: Display structure of downloaded files
       run: ls -R ${{env.SONIVOX_LOCATION}}
 
