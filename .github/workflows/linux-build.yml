@@ -30,10 +30,8 @@ jobs:
         repo: pedrolcl/sonivox
         workflow: cmake.yml
 
-    - name: Display structure of downloaded files
-      run: |
-        tar xvf SonivoxV3.tar
-        ls -R ${{env.SONIVOX_LOCATION}}
+    - name: Extract downloaded files
+      run: tar xvf SonivoxV3.tar
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
