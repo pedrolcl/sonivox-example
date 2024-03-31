@@ -15,20 +15,42 @@
 ]=========================================================================]
 
 cmake_minimum_required(VERSION 3.14)
-project( sonivoxrender LANGUAGES C )
+project( sonivoxrender
+    LANGUAGES C
+    VERSION 1.0
+)
 
-# Alternative 1: Using CMake only and sonivox installed:
-find_package ( sonivox CONFIG REQUIRED )
+option(FIND_SONIVOX "Find an installed Sonivox library" OFF)
+option(USE_STATICLIB "Use the static library" ON)
+
+message(STATUS "Finding Sonivox: ${FIND_SONIVOX}")
+message(STATUS "Using Static Library: ${USE_STATICLIB}")
+
+if (FIND_SONIVOX)
+    find_package ( sonivox CONFIG REQUIRED )
+    message(STATUS "Found Sonivox Version: ${sonivox_VERSION}")
+else()
+    if (USE_STATICLIB)
+        set(BUILD_SONIVOX_SHARED OFF)
+        set(BUILD_SONIVOX_STATIC ON)
+    else()
+        set(BUILD_SONIVOX_SHARED ON)
+        set(BUILD_SONIVOX_STATIC OFF)
+    endif()
+    set(BUILD_TESTING OFF)
+    add_subdirectory( sonivox )
+    include(CMakePrintHelpers)
+    if (USE_STATICLIB)
+        cmake_print_properties(TARGETS sonivox::sonivox-static PROPERTIES VERSION)
+    else()
+        cmake_print_properties(TARGETS sonivox::sonivox PROPERTIES VERSION SOVERSION)
+    endif()
+endif()
+
 add_executable ( sonivoxrender sonivoxrender.c )
-target_link_libraries ( sonivoxrender sonivox::sonivox-static )
 
-# Alternative 2: Using pkg-config and sonivox installed:
-#find_package ( PkgConfig REQUIRED )
-#pkg_check_modules ( sonivox REQUIRED IMPORTED_TARGET sonivox-static )
-#add_executable ( sonivoxrender sonivoxrender.c )
-#target_link_libraries( sonivoxrender PkgConfig::sonivox )
-
-# Alternative 3: sonivox in a subdirectory (for instance: a git submodule )
-#add_subdirectory( sonivox )
-#add_executable ( sonivoxrender sonivoxrender.c )
-#target_link_libraries ( sonivoxrender sonivox::sonivox-static )
+if (USE_STATICLIB)
+    target_link_libraries ( sonivoxrender sonivox::sonivox-static )
+else()
+    target_link_libraries ( sonivoxrender sonivox::sonivox )
+endif()
