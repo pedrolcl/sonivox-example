@@ -15,7 +15,7 @@
 ]=========================================================================]
 
 cmake_minimum_required(VERSION 3.14)
-project( sonivoxrender
+project( sonivox-render
     LANGUAGES C
     VERSION 1.0
 )
@@ -47,10 +47,10 @@ else()
     endif()
 endif()
 
-add_executable ( sonivoxrender sonivoxrender.c )
+add_executable ( sonivox-render sonivoxrender.c )
 
 if (USE_STATICLIB)
-    target_link_libraries ( sonivoxrender sonivox::sonivox-static )
+    target_link_libraries ( sonivox-render sonivox::sonivox-static )
 else()
-    target_link_libraries ( sonivoxrender sonivox::sonivox )
+    target_link_libraries ( sonivox-render sonivox::sonivox )
 endif()

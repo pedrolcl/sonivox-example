@@ -26,11 +26,15 @@ Example 1: Render a MIDI file and save the rendered audio as a raw audio file:
 
 Example 2: pipe the rendered audio thru the Linux ALSA 'aplay' utility:
 
-    $ sonivoxrender ants.mid | aplay -c 2 -f S16_LE -r 22050
+    $ sonivoxrender ants.mid | aplay -c 2 -f S16_LE -r 44100
 
-Example 3: pipe the rendered audio thru the 'lame' utility creating a MP3 file:
+Example 3: pipe the rendered audio thru the ['lame'](https://lame.sourceforge.io) utility creating a MP3 file:
 
-    $ sonivoxrender ants.mid | lame -r -s 22050 - ants.mp3
+    $ sonivoxrender ants.mid | lame -r -s 44100 - ants.mp3
+    
+Example 4: pipe the rendered audio thru the ['sox'](https://sourceforge.net/projects/sox/) utility creating a WAV file:
+
+    $ sonivoxrender ants.mid | sox -t s16 -c 2 -r 44100 - ants.wav
 
 ## License
 
