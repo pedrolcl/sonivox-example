@@ -11,13 +11,18 @@ Once compiled, you can use the program to listen MIDI files or to create MP3 fil
 
 ~~~
 $ ./sonivoxrender -h
-Usage: ./sonivoxrender [-h] [-d file.dls] [-r 0..4] [-w 0..32765] file.mid ...
+Usage: ./sonivoxrender [-h|--help] [-v|--version] [-d|--dls file.dls] [-r|--reverb 0..4] [-w|--wet 0..32767] [-n|--dry 0..32767] [-c|--chorus 0..4] [-l|--level 0..32767] [-g|--gain 0..100] file.mid ...
 Render standard MIDI files into raw PCM audio.
 Options:
-    -h              this help message.
-    -d file.dls     DLS soundfont.
-    -r n            reverb preset: 0=no, 1=large hall, 2=hall, 3=chamber, 4=room.
-    -w n            reverb wet: 0..32765.
+    -h, --help          this help message.
+    -v, --version       sonivox version.
+    -d, --dls file.dls  DLS soundfont.
+    -r, --reverb n      reverb preset: 0=no, 1=large hall, 2=hall, 3=chamber, 4=room.
+    -w, --wet n         reverb wet: 0..32767.
+    -n, --dry n         reverb dry: 0..32767.
+    -c, --chorus n      chorus preset: 0=no, 1..4=presets.
+    -l, --level n       chorus level: 0..32767.
+    -g, --gain n        master gain: 0..100.
 ~~~
 
 Example 1: Render a MIDI file and save the rendered audio as a raw audio file:
@@ -35,7 +40,7 @@ equivalent to:
 Example 3: pipe the rendered audio thru the ['lame'](https://lame.sourceforge.io) utility creating a MP3 file:
 
     $ sonivoxrender ants.mid | lame -r -s 44100 - ants.mp3
-    
+
 Example 4: pipe the rendered audio thru the ['sox'](https://sourceforge.net/projects/sox/) utility creating a WAV file:
 
     $ sonivoxrender ants.mid | sox -t s16 -c 2 -r 44100 - ants.wav

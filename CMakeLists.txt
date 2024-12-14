@@ -15,13 +15,20 @@
 ]=========================================================================]
 
 cmake_minimum_required(VERSION 3.14)
-project( sonivox-render
+
+project( sonivoxrender
     LANGUAGES C
     VERSION 1.0
 )
 
 option(FIND_SONIVOX "Find an installed Sonivox library" OFF)
 option(USE_STATICLIB "Use the static library" ON)
+option(USE_44KHZ "Output 44100 Hz audio sample rate (instead of 22050 Hz)" ON)
+option(USE_16BITS_SAMPLES "Use 16 bits samples (instead of 8 bit)" ON)
+option(NEW_HOST_WRAPPER "Use the new host wrapper" ON)
+option(BUILD_MANPAGE "Build the manpage" OFF)
+
+set(MAX_VOICES 64 CACHE STRING "Maximum number of voices")
 
 message(STATUS "Finding Sonivox: ${FIND_SONIVOX}")
 message(STATUS "Using Static Library: ${USE_STATICLIB}")
@@ -47,10 +54,52 @@ else()
     endif()
 endif()
 
-add_executable ( sonivox-render sonivoxrender.c )
+add_executable ( sonivoxrender sonivoxrender.c )
 
 if (USE_STATICLIB)
-    target_link_libraries ( sonivox-render sonivox::sonivox-static )
+    target_link_libraries ( sonivoxrender sonivox::sonivox-static )
 else()
-    target_link_libraries ( sonivox-render sonivox::sonivox )
+    target_link_libraries ( sonivoxrender sonivox::sonivox )
 endif()
+
+if (BUILD_MANPAGE)
+    if(NOT EXISTS ${PANDOC_EXECUTABLE})
+        find_program(PANDOC_EXECUTABLE pandoc)
+        mark_as_advanced(PANDOC_EXECUTABLE)
+    endif()
+
+    if (EXISTS ${PANDOC_EXECUTABLE})
+        set(_src ${CMAKE_CURRENT_SOURCE_DIR}/sonivoxrender.1.md)
+        if (NOT PROJECT_RELEASE_DATE)
+            unset(_date)
+            execute_process (
+                COMMAND bash -c "LANG=en;date +'%B %d, %Y'"
+                OUTPUT_VARIABLE _date
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+        else()
+            set(_date ${PROJECT_RELEASE_DATE})
+        endif()
+        set(_footer "${PROJECT_NAME} ${PROJECT_VERSION}")
+        add_custom_command (
+            OUTPUT sonivoxrender.1
+            COMMAND ${PANDOC_EXECUTABLE} -s -t man -Vdate=${_date} -Vfooter=${_footer} ${_src} -o sonivoxrender.1
+            DEPENDS ${_src}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            VERBATIM
+        )
+        add_custom_target(manpage ALL DEPENDS sonivoxrender.1)
+    endif()
+else()
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sonivoxrender.1 ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+endif()
+
+include(GNUInstallDirs)
+
+install( TARGETS sonivoxrender
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sonivoxrender.1
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
+)
