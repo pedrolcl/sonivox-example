@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Pedro López-Cabanillas
+ * Copyright (c) 2022-2025 Pedro López-Cabanillas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include <eas.h>
 #include <eas_reverb.h>
 #include <eas_chorus.h>
+#include <eas_report.h>
+
+#if defined(_MSC_VER)
+#include <malloc.h>
+#define alloca _alloca
+#endif
 
 const char *dls_path = NULL;
 EAS_I32 playback_gain = 90;
@@ -35,6 +40,12 @@ EAS_I32 reverb_dry = 0;
 EAS_I32 chorus_type = 0;
 EAS_I32 chorus_level = 32767;
 EAS_DATA_HANDLE mEASDataHandle = NULL;
+int verbosity =
+#ifdef NDEBUG
+    _EAS_SEVERITY_WARNING;
+#else
+    _EAS_SEVERITY_INFO;
+#endif
 const S_EAS_LIB_CONFIG *mEASConfig = NULL;
 char sLibrary_version[16];
 
@@ -92,6 +103,9 @@ int initializeLibrary(void)
 #ifdef __WIN32__
 	setmode(fileno(stdout), O_BINARY);
 #endif
+
+    EAS_SetDebugFile(stderr, 1);
+    EAS_SetDebugLevel(verbosity);
 
     EAS_RESULT result = EAS_Init(&mEASDataHandle);
     if (result != EAS_SUCCESS) {
@@ -344,10 +358,11 @@ int main (int argc, char **argv)
                                            {"chorus", required_argument, 0, 'c'},
                                            {"level", required_argument, 0, 'l'},
                                            {"gain", required_argument, 0, 'g'},
+                                           {"Verbosity", required_argument, 0, 'V'},
                                            {0, 0, 0, 0}};
 
     while (1) {
-        c = getopt_long(argc, argv, "hvd:r:w:n:c:l:g:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hvd:r:w:n:c:l:g:V:", long_options, &option_index);
 
         if (c == -1) {
             break;
@@ -355,23 +370,27 @@ int main (int argc, char **argv)
 
         switch (c) {
         case 'h':
-            fprintf(stderr,
-                    "Usage: %s [-h|--help] [-v|--version] [-d|--dls file.dls] [-r|--reverb 0..4] "
-                    "[-w|--wet 0..32767] [-n|--dry 0..32767] "
-                    "[-c|--chorus 0..4] [-l|--level 0..32767] [-g|--gain 0..100] file.mid ...\n"
-                    "Render standard MIDI files into raw PCM audio.\n"
-                    "Options:\n"
-                    "\t-h, --help\t\tthis help message.\n"
-                    "\t-v, --version\t\tsonivox version.\n"
-                    "\t-d, --dls file.dls\tDLS soundfont.\n"
-                    "\t-r, --reverb n\t\treverb preset: 0=no, 1=large hall, 2=hall, 3=chamber, "
-                    "4=room.\n"
-                    "\t-w, --wet n\t\treverb wet: 0..32767.\n"
-                    "\t-n, --dry n\t\treverb dry: 0..32767.\n"
-                    "\t-c, --chorus n\t\tchorus preset: 0=no, 1..4=presets.\n"
-                    "\t-l, --level n\t\tchorus level: 0..32767.\n"
-                    "\t-g, --gain n\t\tmaster gain: 0..100.\n",
-                    argv[0]);
+            fprintf(
+                stderr,
+                "Usage: %s [-h|--help] [-v|--version] [-d|--dls file.dls] [-r|--reverb 0..4] "
+                "[-w|--wet 0..32767] [-n|--dry 0..32767] "
+                "[-c|--chorus 0..4] [-l|--level 0..32767] [-g|--gain 0..100] [-V|--Verbosity "
+                "0..5] file.mid ...\n"
+                "Render standard MIDI files into raw PCM audio.\n"
+                "Options:\n"
+                "\t-h, --help\t\tthis help message.\n"
+                "\t-v, --version\t\tsonivox version.\n"
+                "\t-d, --dls file.dls\tDLS soundfont.\n"
+                "\t-r, --reverb n\t\treverb preset: 0=no, 1=large hall, 2=hall, 3=chamber, "
+                "4=room.\n"
+                "\t-w, --wet n\t\treverb wet: 0..32767.\n"
+                "\t-n, --dry n\t\treverb dry: 0..32767.\n"
+                "\t-c, --chorus n\t\tchorus preset: 0=no, 1..4=presets.\n"
+                "\t-l, --level n\t\tchorus level: 0..32767.\n"
+                "\t-g, --gain n\t\tmaster gain: 0..100.\n"
+                "\t-V, --Verbosity n\tVerbosity: 0=no, 1=fatals, 2=errors, 3=warnings, 4=infos, "
+                "5=details\n",
+                argv[0]);
             return EXIT_FAILURE;
         case 'v':
             fprintf(stderr, "version: %s\n", sLibrary_version);
@@ -418,6 +437,13 @@ int main (int argc, char **argv)
             playback_gain = atoi(optarg);
             if ((playback_gain < 0) || (playback_gain > 100)) {
                 fprintf (stderr, "invalid playback gain: %ld\n", playback_gain);
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'V':
+            verbosity = atoi(optarg);
+            if ((verbosity < 0) || (verbosity > 5)) {
+                fprintf(stderr, "invalid verbosity level: %d\n", verbosity);
                 return EXIT_FAILURE;
             }
             break;

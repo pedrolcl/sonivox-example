@@ -23,9 +23,6 @@ project( sonivoxrender
 
 option(FIND_SONIVOX "Find an installed Sonivox library" OFF)
 option(USE_STATICLIB "Use the static library" ON)
-option(USE_44KHZ "Output 44100 Hz audio sample rate (instead of 22050 Hz)" ON)
-option(USE_16BITS_SAMPLES "Use 16 bits samples (instead of 8 bit)" ON)
-option(NEW_HOST_WRAPPER "Use the new host wrapper" ON)
 option(BUILD_MANPAGE "Build the manpage" OFF)
 
 set(MAX_VOICES 64 CACHE STRING "Maximum number of voices")
