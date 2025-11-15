@@ -21,8 +21,8 @@ project( sonivoxrender
     VERSION 4.0.0
 )
 
-option(FIND_SONIVOX "Find an installed Sonivox library" ON)
-option(sonivox_SHARED_LIBS "Use the static library" ON)
+option(FIND_SONIVOX "Find an installed Sonivox library (instead of a submodule)" ON)
+option(sonivox_SHARED_LIBS "Use the shared (instead of static) library" ON)
 option(USE_44KHZ "Output 44100 Hz audio sample rate (instead of 22050 Hz)" ON)
 option(USE_16BITS_SAMPLES "Use 16 bits samples (instead of 8 bit)" ON)
 option(NEW_HOST_WRAPPER "Use the new host wrapper" ON)
@@ -31,7 +31,7 @@ option(BUILD_MANPAGE "Build the manpage" OFF)
 set(MAX_VOICES 64 CACHE STRING "Maximum number of voices")
 
 message(STATUS "Finding Sonivox: ${FIND_SONIVOX}")
-message(STATUS "Using Static Library: ${USE_STATICLIB}")
+message(STATUS "Using Shared Library: ${sonivox_SHARED_LIBS}")
 
 # set(PROJECT_RELEASE_DATE)
 
@@ -40,11 +40,12 @@ if (FIND_SONIVOX)
     message(STATUS "Found Sonivox Version: ${sonivox_VERSION}")
 else()
     set(BUILD_TESTING OFF)
-    set(BUILD_EXAMPLE OFF)
+    set(BUILD_APPLICATION OFF)
     add_subdirectory( sonivox )
-    include(CMakePrintHelpers)
-    cmake_print_properties(TARGETS sonivox::sonivox PROPERTIES VERSION SOVERSION)
 endif()
+
+include(CMakePrintHelpers)
+cmake_print_properties(TARGETS sonivox::sonivox PROPERTIES VERSION SOVERSION INTERFACE_INCLUDE_DIRECTORIES)
 
 add_executable ( sonivoxrender sonivoxrender.c )
 
