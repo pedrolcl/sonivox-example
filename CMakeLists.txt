@@ -1,5 +1,5 @@
 #[=========================================================================[
-  Copyright (c) 2022-2024 Pedro López-Cabanillas
+  Copyright (c) 2022-2025 Pedro López-Cabanillas
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
   limitations under the License.
 ]=========================================================================]
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.21)
 
 project( sonivoxrender
     LANGUAGES C
-    VERSION 1.0
+    VERSION 4.0.0
 )
 
 option(FIND_SONIVOX "Find an installed Sonivox library" ON)
@@ -32,6 +32,8 @@ set(MAX_VOICES 64 CACHE STRING "Maximum number of voices")
 
 message(STATUS "Finding Sonivox: ${FIND_SONIVOX}")
 message(STATUS "Using Static Library: ${USE_STATICLIB}")
+
+# set(PROJECT_RELEASE_DATE)
 
 if (FIND_SONIVOX)
     find_package ( sonivox 4 CONFIG REQUIRED )
