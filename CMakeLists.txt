@@ -34,7 +34,7 @@ message(STATUS "Finding Sonivox: ${FIND_SONIVOX}")
 message(STATUS "Using Static Library: ${USE_STATICLIB}")
 
 if (FIND_SONIVOX)
-    find_package ( sonivox CONFIG REQUIRED )
+    find_package ( sonivox 3...<4 CONFIG REQUIRED )
     message(STATUS "Found Sonivox Version: ${sonivox_VERSION}")
 else()
     if (USE_STATICLIB)
