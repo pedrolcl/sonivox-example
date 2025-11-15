@@ -1,4 +1,4 @@
 [submodule "sonivox"]
 	path = sonivox
 	url = git@github.com:pedrolcl/sonivox.git
-	branch = devel
+	branch = buildsystem_refactor
