@@ -28,17 +28,22 @@
 #include <eas_report.h>
 
 #if defined(_MSC_VER)
+#include <io.h>
 #include <malloc.h>
 #define alloca _alloca
 #endif
 
+
 const char *dls_path = NULL;
-EAS_I32 playback_gain = 90;
+const char *sndlib_name = NULL;
+EAS_I32 playback_gain = 100;
 EAS_I32 reverb_type = 0;
 EAS_I32 reverb_wet = 32767;
 EAS_I32 reverb_dry = 0;
+EAS_BOOL reverb_override = EAS_FALSE;
 EAS_I32 chorus_type = 0;
 EAS_I32 chorus_level = 32767;
+EAS_BOOL chorus_override = EAS_FALSE;
 EAS_DATA_HANDLE mEASDataHandle = NULL;
 int verbosity =
 #ifdef NDEBUG
@@ -48,27 +53,6 @@ int verbosity =
 #endif
 const S_EAS_LIB_CONFIG *mEASConfig = NULL;
 char sLibrary_version[16];
-
-#ifndef NEW_HOST_WRAPPER
-int Read(void *handle, void *buf, int offset, int size)
-{
-    int ret;
-
-    ret = fseek((FILE *) handle, offset, SEEK_SET);
-    if (ret < 0) return 0;
-
-    return fread(buf, 1, size, (FILE *) handle);
-}
-
-int Size(void *handle) {
-    int ret;
-
-    ret = fseek((FILE *) handle, 0, SEEK_END);
-    if (ret < 0) return ret;
-
-    return ftell((FILE *) handle);
-}
-#endif
 
 void initLibraryVersion()
 {
@@ -100,8 +84,10 @@ int initializeLibrary(void)
 {
     int ok = EXIT_SUCCESS;
 
-#ifdef __WIN32__
-	setmode(fileno(stdout), O_BINARY);
+#if defined(__MINGW32__) 
+    setmode(fileno(stdout), O_BINARY);
+#elif defined(_MSC_VER)
+    _setmode(_fileno(stdout), _O_BINARY);
 #endif
 
     EAS_SetDebugFile(stderr, 1);
@@ -120,6 +106,22 @@ int initializeLibrary(void)
         return ok;
     }
 
+    if (sndlib_name == NULL) {
+        sndlib_name = EAS_GetDefaultSoundLibrary(EAS_SNDLIB_WT);
+        if (sndlib_name == NULL) {
+            fprintf(stderr, "Failed to get default sound library name\n");
+            ok = EXIT_FAILURE;
+            return ok;
+        }
+    }
+    EAS_Report(_EAS_SEVERITY_DETAIL, "Using sound library: %s\n", sndlib_name);
+    result = EAS_SetSoundLibrary(mEASDataHandle, NULL, EAS_GetSoundLibrary(mEASDataHandle, sndlib_name));
+    if (result != EAS_SUCCESS) {
+        fprintf(stderr, "Failed to set sound library: %s\n", sndlib_name);
+        ok = EXIT_FAILURE;
+        return ok;
+    }
+
     if (dls_path != NULL) {
         EAS_FILE mDLSFile;
         memset(&mDLSFile, 0, sizeof(EAS_FILE));
@@ -130,11 +132,6 @@ int initializeLibrary(void)
             ok = EXIT_FAILURE;
             goto cleanup;
         }
-
-#ifndef NEW_HOST_WRAPPER
-        mDLSFile.readAt = Read;
-        mDLSFile.size = Size;
-#endif
 
         result = EAS_LoadDLSCollection(mEASDataHandle, NULL, &mDLSFile);
         fclose(mDLSFile.handle);
@@ -152,6 +149,13 @@ int initializeLibrary(void)
         goto cleanup;
     }
 
+    result = EAS_SetParameter(mEASDataHandle, EAS_MODULE_REVERB, EAS_PARAM_REVERB_OVERRIDE_CC, reverb_override);
+    if (result != EAS_SUCCESS) {
+        fprintf(stderr, "Failed to enable reverb override\n");
+        ok = EXIT_FAILURE;
+        goto cleanup;
+    }
+
     EAS_BOOL reverb_bypass = EAS_TRUE;
     EAS_I32 reverb_preset = reverb_type - 1;
     if ( reverb_preset >= EAS_PARAM_REVERB_LARGE_HALL && reverb_preset <= EAS_PARAM_REVERB_ROOM ) {
@@ -163,9 +167,9 @@ int initializeLibrary(void)
             goto cleanup;
         }
         result = EAS_SetParameter(mEASDataHandle,
-                                  EAS_MODULE_REVERB,
-                                  EAS_PARAM_REVERB_WET,
-                                  reverb_wet);
+                                EAS_MODULE_REVERB,
+                                EAS_PARAM_REVERB_WET,
+                                reverb_wet);
         if (result != EAS_SUCCESS) {
             fprintf(stderr, "Failed to set reverb wet amount");
             ok = EXIT_FAILURE;
@@ -182,6 +186,13 @@ int initializeLibrary(void)
     result = EAS_SetParameter(mEASDataHandle, EAS_MODULE_REVERB, EAS_PARAM_REVERB_BYPASS, reverb_bypass);
     if (result != EAS_SUCCESS) {
         fprintf(stderr, "Failed to set reverb bypass");
+        ok = EXIT_FAILURE;
+        goto cleanup;
+    }
+
+    result = EAS_SetParameter(mEASDataHandle, EAS_MODULE_CHORUS, EAS_PARAM_CHORUS_OVERRIDE_CC, chorus_override);
+    if (result != EAS_SUCCESS) {
+        fprintf(stderr, "Failed to enable chorus override\n");
         ok = EXIT_FAILURE;
         goto cleanup;
     }
@@ -238,11 +249,6 @@ int renderFile(const char *fileName)
         return ok;
     }
 
-#ifndef NEW_HOST_WRAPPER
-    mEasFile.readAt = Read;
-    mEasFile.size = Size;
-#endif
-
     EAS_RESULT result = EAS_OpenFile(mEASDataHandle, &mEasFile, &mEASStreamHandle);
     if (result != EAS_SUCCESS) {
         fprintf(stderr, "Failed to open file\n");
@@ -287,7 +293,7 @@ int renderFile(const char *fileName)
     mPCMBufferSize = sizeof(EAS_PCM) * mEASConfig->mixBufferSize * mEASConfig->numChannels;
     mAudioBuffer = alloca(mPCMBufferSize);
     if (mAudioBuffer == NULL) {
-        fprintf(stderr, "Failed to allocate memory of size: %ld", mPCMBufferSize);
+        fprintf(stderr, "Failed to allocate memory of size: %d", mPCMBufferSize);
         ok = EXIT_FAILURE;
         goto cleanup;
     }
@@ -315,7 +321,7 @@ int renderFile(const char *fileName)
         }
 
         if (count != mEASConfig->mixBufferSize) {
-            fprintf(stderr, "Only %ld out of %ld frames rendered\n", count, mEASConfig->mixBufferSize);
+            fprintf(stderr, "Only %d out of %d frames rendered\n", count, mEASConfig->mixBufferSize);
             ok = EXIT_FAILURE;
             break;
         }
@@ -359,10 +365,13 @@ int main (int argc, char **argv)
                                            {"level", required_argument, 0, 'l'},
                                            {"gain", required_argument, 0, 'g'},
                                            {"Verbosity", required_argument, 0, 'V'},
+                                           {"reverb-post-mix", no_argument, 0, 'R'},
+                                           {"chorus-post-mix", no_argument, 0, 'C'},
+                                           {"sndlib", required_argument, 0, 's'},
                                            {0, 0, 0, 0}};
 
     while (1) {
-        c = getopt_long(argc, argv, "hvd:r:w:n:c:l:g:V:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hvd:r:w:n:c:l:g:V:RCs:", long_options, &option_index);
 
         if (c == -1) {
             break;
@@ -372,24 +381,27 @@ int main (int argc, char **argv)
         case 'h':
             fprintf(
                 stderr,
-                "Usage: %s [-h|--help] [-v|--version] [-d|--dls file.dls] [-r|--reverb 0..4] "
+                "Usage: %s [-h|--help] [-v|--version] [-d|--dls soundfont] [-r|--reverb 0..4] "
                 "[-w|--wet 0..32767] [-n|--dry 0..32767] "
-                "[-c|--chorus 0..4] [-l|--level 0..32767] [-g|--gain 0..100] [-V|--Verbosity "
-                "0..5] file.mid ...\n"
+                "[-c|--chorus 0..4] [-l|--level 0..32767] [-g|--gain 0..196] [-V|--Verbosity "
+                "0..5] [-R|--reverb-post-mix] [-C|--chorus-post-mix] [-s|--sndlib 1..3] file.mid ...\n"
                 "Render standard MIDI files into raw PCM audio.\n"
                 "Options:\n"
                 "\t-h, --help\t\tthis help message.\n"
                 "\t-v, --version\t\tsonivox version.\n"
-                "\t-d, --dls file.dls\tDLS soundfont.\n"
+                "\t-d, --dls soundfont\tDLS or SF2 soundfont.\n"
                 "\t-r, --reverb n\t\treverb preset: 0=no, 1=large hall, 2=hall, 3=chamber, "
                 "4=room.\n"
                 "\t-w, --wet n\t\treverb wet: 0..32767.\n"
                 "\t-n, --dry n\t\treverb dry: 0..32767.\n"
                 "\t-c, --chorus n\t\tchorus preset: 0=no, 1..4=presets.\n"
                 "\t-l, --level n\t\tchorus level: 0..32767.\n"
-                "\t-g, --gain n\t\tmaster gain: 0..100.\n"
+                "\t-g, --gain n\t\tmaster gain: 0..196. 100 = +0dB.\n"
                 "\t-V, --Verbosity n\tVerbosity: 0=no, 1=fatals, 2=errors, 3=warnings, 4=infos, "
-                "5=details\n",
+                "5=details\n"
+                "\t-R, --reverb-post-mix\tignore CC91 reverb send.\n"
+                "\t-C, --chorus-post-mix\tignore CC93 chorus send.\n"
+                "\t-s, --sndlib n\t\tsound engine library: 1=wt, 2=fm, 3=hybrid.\n",
                 argv[0]);
             return EXIT_FAILURE;
         case 'v':
@@ -398,45 +410,51 @@ int main (int argc, char **argv)
         case 'd':
             dls_path = optarg;
             break;
+        case 'R':
+            reverb_override = EAS_TRUE;
+            break;
+        case 'C':
+            chorus_override = EAS_TRUE;
+            break;
         case 'r':
             reverb_type = atoi(optarg);
             if ((reverb_type < 0) || (reverb_type > 4)) {
-                fprintf (stderr, "invalid reverb preset: %ld\n", reverb_type);
+                fprintf (stderr, "invalid reverb preset: %d\n", reverb_type);
                 return EXIT_FAILURE;
             }
             break;
         case 'w':
             reverb_wet = atoi(optarg);
             if ((reverb_wet < 0) || (reverb_wet > 32767)) {
-                fprintf (stderr, "invalid reverb wet: %ld\n", reverb_wet);
+                fprintf (stderr, "invalid reverb wet: %d\n", reverb_wet);
                 return EXIT_FAILURE;
             }
             break;
         case 'n':
             reverb_dry = atoi(optarg);
             if ((reverb_dry < 0) || (reverb_dry > 32767)) {
-                fprintf (stderr, "invalid reverb dry: %ld\n", reverb_dry);
+                fprintf (stderr, "invalid reverb dry: %d\n", reverb_dry);
                 return EXIT_FAILURE;
             }
             break;
         case 'c':
             chorus_type = atoi(optarg);
             if ((chorus_type < 0) || (chorus_type > 4)) {
-                fprintf (stderr, "invalid chorus preset: %ld\n", chorus_type);
+                fprintf (stderr, "invalid chorus preset: %d\n", chorus_type);
                 return EXIT_FAILURE;
             }
             break;
         case 'l':
             chorus_level = atoi(optarg);
             if ((chorus_level < 0) || (chorus_level > 32767)) {
-                fprintf (stderr, "invalid chorus level: %ld\n", chorus_level);
+                fprintf (stderr, "invalid chorus level: %d\n", chorus_level);
                 return EXIT_FAILURE;
             }
             break;
         case 'g':
             playback_gain = atoi(optarg);
-            if ((playback_gain < 0) || (playback_gain > 100)) {
-                fprintf (stderr, "invalid playback gain: %ld\n", playback_gain);
+            if ((playback_gain < 0) || (playback_gain > EAS_MAX_VOLUME)) {
+                fprintf (stderr, "invalid playback gain: %d\n", playback_gain);
                 return EXIT_FAILURE;
             }
             break;
@@ -447,6 +465,15 @@ int main (int argc, char **argv)
                 return EXIT_FAILURE;
             }
             break;
+        case 's': {
+            int sndlib_type = atoi(optarg);
+            sndlib_name = EAS_GetDefaultSoundLibrary(sndlib_type);
+            if ((sndlib_type < EAS_SNDLIB_WT) || (sndlib_type > EAS_SNDLIB_HYBRID) || (sndlib_name == NULL)) {
+                fprintf(stderr, "invalid sound library: %d\n", sndlib_type);
+                return EXIT_FAILURE;
+            }
+            break;
+        }
         case '?':
             fprintf(stderr, "unknown option %c\n", optopt);
             return EXIT_FAILURE;

@@ -7,11 +7,12 @@ on:
     branches: [ "devel", "main" ]
   pull_request:
     branches: [ "devel", "main" ]
+  workflow_dispatch:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: RelWithDebInfo
-  SONIVOX_LOCATION: ${{github.workspace}}/SonivoxV3
+  SONIVOX_LOCATION: ${{github.workspace}}/SonivoxV4
 
 jobs:
   build:
@@ -23,16 +24,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: dawidd6/action-download-artifact@v3
+    - uses: dawidd6/action-download-artifact@v11
       with:
-        name: SonivoxV3-linux
+        name: SonivoxV4-Linux-x64-r44s16
         github_token: ${{secrets.GH_PAT}}
-        repo: pedrolcl/sonivox
+        repo: EmbeddedSynth/sonivox
         allow_forks: false
-        workflow: cmake-linux.yml
+        workflow: linux-ci.yml
+        branch: devel
 
     - name: Extract downloaded files
-      run: tar xvf SonivoxV3.tar
+      run: tar xvf SonivoxV4.tar
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

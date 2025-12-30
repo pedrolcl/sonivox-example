@@ -1,5 +1,5 @@
 #[=========================================================================[
-  Copyright (c) 2022-2024 Pedro López-Cabanillas
+  Copyright (c) 2022-2025 Pedro López-Cabanillas
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,51 +14,44 @@
   limitations under the License.
 ]=========================================================================]
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.21)
 
 project( sonivoxrender
     LANGUAGES C
-    VERSION 1.0
+    VERSION 4.0.0
 )
 
-option(FIND_SONIVOX "Find an installed Sonivox library" OFF)
-option(USE_STATICLIB "Use the static library" ON)
+option(FIND_SONIVOX "Find an installed Sonivox library (instead of a submodule)" ON)
+option(sonivox_SHARED_LIBS "Use the shared (instead of static) library" ON)
+option(USE_44KHZ "Output 44100 Hz audio sample rate (instead of 22050 Hz)" ON)
+option(USE_16BITS_SAMPLES "Use 16 bits samples (instead of 8 bit)" ON)
+option(NEW_HOST_WRAPPER "Use the new host wrapper" ON)
 option(BUILD_MANPAGE "Build the manpage" OFF)
+option(EAS_WT_SYNTH "Enable WaveTable Synth" TRUE)
+option(EAS_FM_SYNTH "Enable FM Synth" FALSE)
 
 set(MAX_VOICES 64 CACHE STRING "Maximum number of voices")
 
 message(STATUS "Finding Sonivox: ${FIND_SONIVOX}")
-message(STATUS "Using Static Library: ${USE_STATICLIB}")
+message(STATUS "Using Shared Library: ${sonivox_SHARED_LIBS}")
+
+set(PROJECT_RELEASE_DATE "December 30, 2025")
 
 if (FIND_SONIVOX)
-    find_package ( sonivox 3...<4 CONFIG REQUIRED )
+    find_package ( sonivox 4 CONFIG REQUIRED )
     message(STATUS "Found Sonivox Version: ${sonivox_VERSION}")
 else()
-    if (USE_STATICLIB)
-        set(BUILD_SONIVOX_SHARED OFF)
-        set(BUILD_SONIVOX_STATIC ON)
-    else()
-        set(BUILD_SONIVOX_SHARED ON)
-        set(BUILD_SONIVOX_STATIC OFF)
-    endif()
     set(BUILD_TESTING OFF)
-    set(BUILD_EXAMPLE OFF)
+    set(BUILD_APPLICATION OFF)
     add_subdirectory( sonivox )
-    include(CMakePrintHelpers)
-    if (USE_STATICLIB)
-        cmake_print_properties(TARGETS sonivox::sonivox-static PROPERTIES VERSION)
-    else()
-        cmake_print_properties(TARGETS sonivox::sonivox PROPERTIES VERSION SOVERSION)
-    endif()
 endif()
+
+include(CMakePrintHelpers)
+cmake_print_properties(TARGETS sonivox::sonivox PROPERTIES VERSION SOVERSION INTERFACE_INCLUDE_DIRECTORIES)
 
 add_executable ( sonivoxrender sonivoxrender.c )
 
-if (USE_STATICLIB)
-    target_link_libraries ( sonivoxrender sonivox::sonivox-static )
-else()
-    target_link_libraries ( sonivoxrender sonivox::sonivox )
-endif()
+target_link_libraries ( sonivoxrender sonivox::sonivox )
 
 if (BUILD_MANPAGE)
     if(NOT EXISTS ${PANDOC_EXECUTABLE})
