@@ -7,7 +7,7 @@
 
 # SYNOPSIS
 
-| **sonivoxrender** [**-h|-\-help**] [**-v|-\-version**] [**-d|-\-dls** _soundfont_] [**-r|-\-reverb** _0..4_] [**-w|-\-wet** _0..32767_] [**-n|-\-dry** _0..32767_] [**-c|-\-chorus** _0..4_] [**-l|-\-level** _0..32767_] [**-g|-\-gain** _0..196_] [**-V|-\-Verbosity** _0..5_] [**-R|-\-reverb-post-mix**] [**-C|-\-chorus-post-mix**] _midi_file_
+| **sonivoxrender** [**-h|-\-help**] [**-v|-\-version**] [**-d|-\-dls** _soundfont_] [**-r|-\-reverb** _0..4_] [**-w|-\-wet** _0..32767_] [**-n|-\-dry** _0..32767_] [**-c|-\-chorus** _0..4_] [**-l|-\-level** _0..32767_] [**-g|-\-gain** _0..196_] [**-V|-\-Verbosity** _0..5_] [**-R|-\-reverb-post-mix**] [**-C|-\-chorus-post-mix**] [**-s|-\-sndlib** _1..3_] _midi_file_
 
 # DESCRIPTION
 
@@ -64,6 +64,19 @@ It reads .MID (Standard MIDI Files) file format, and writes an audio stream to t
 
 :   Ignore CC93 chorus send level. See also **-\-reverb-post-mix**.
 
+-s, -\-sndlib _index_
+
+:   EAS sound library to use:
+
+    * 1: wt_200k_G (default) - WT-only bank, used in Android devices. Also named "Common".
+        Support 22050 Hz and 44100 Hz sample rates, 8-bit and 16-bit samples.
+    * 2: GMdblib-3 - FM-only bank. Support all sample rates. Sample bit depth does not matter here.
+    * 3: hybrid_22khz_mcu - Hybrid bank. Use WT synth for drums and FM for melodic instruments.
+        This bank is a combination of `GMdblib-3` and `Sonic_20Khz_Drums`.
+        Support 22050 Hz sample rate and 8-bit samples only.
+
+    **Note:** This option does not affect DLS/SF2. They will always use the DLS synth engine. If the selected sound library is not compatible with the build configuration, the program will fail with an error message.
+
 ## Arguments
 
 _midi_file_
@@ -98,9 +111,13 @@ Example 5: pipe the rendered audio thru the PulseAudio's **pacat** utility:
 
     $ sonivoxrender ants.mid | pacat
 
+Example 6: pipe the rendered audio thru the PipeWire's **pw-play** utility:
+
+    $ sonivoxrender ants.mid | pw-play --rate 44100 -
+
 # BUGS
 
-See Tickets at GitHub <https://github.com/pedrolcl/sonivox/issues/>
+See Tickets at GitHub <https://github.com/EnbeddedSynth/sonivox/issues/>
 
 # LICENSE AND COPYRIGHT
 

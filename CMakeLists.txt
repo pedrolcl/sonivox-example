@@ -27,13 +27,15 @@ option(USE_44KHZ "Output 44100 Hz audio sample rate (instead of 22050 Hz)" ON)
 option(USE_16BITS_SAMPLES "Use 16 bits samples (instead of 8 bit)" ON)
 option(NEW_HOST_WRAPPER "Use the new host wrapper" ON)
 option(BUILD_MANPAGE "Build the manpage" OFF)
+option(EAS_WT_SYNTH "Enable WaveTable Synth" TRUE)
+option(EAS_FM_SYNTH "Enable FM Synth" FALSE)
 
 set(MAX_VOICES 64 CACHE STRING "Maximum number of voices")
 
 message(STATUS "Finding Sonivox: ${FIND_SONIVOX}")
 message(STATUS "Using Shared Library: ${sonivox_SHARED_LIBS}")
 
-# set(PROJECT_RELEASE_DATE)
+set(PROJECT_RELEASE_DATE "December 30, 2025")
 
 if (FIND_SONIVOX)
     find_package ( sonivox 4 CONFIG REQUIRED )

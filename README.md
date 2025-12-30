@@ -11,7 +11,7 @@ Once compiled, you can use the program to listen MIDI files or to create MP3 fil
 
 ~~~
 $ ./sonivoxrender -h
-Usage: ./sonivoxrender [-h|--help] [-v|--version] [-d|--dls soundfont] [-r|--reverb 0..4] [-w|--wet 0..32767] [-n|--dry 0..32767] [-c|--chorus 0..4] [-l|--level 0..32767] [-g|--gain 0..196] [-V|--Verbosity 0..5] [-R|--reverb-post-mix] [-C|--chorus-post-mix] file.mid ...
+Usage: ./sonivoxrender [-h|--help] [-v|--version] [-d|--dls soundfont] [-r|--reverb 0..4] [-w|--wet 0..32767] [-n|--dry 0..32767] [-c|--chorus 0..4] [-l|--level 0..32767] [-g|--gain 0..196] [-V|--Verbosity 0..5] [-R|--reverb-post-mix] [-C|--chorus-post-mix] [-s|--sndlib 1..3] file.mid ...
 Render standard MIDI files into raw PCM audio.
 Options:
         -h, --help              this help message.
@@ -26,6 +26,7 @@ Options:
         -V, --Verbosity n       Verbosity: 0=no, 1=fatals, 2=errors, 3=warnings, 4=infos, 5=details
         -R, --reverb-post-mix   ignore CC91 reverb send.
         -C, --chorus-post-mix   ignore CC93 chorus send.
+        -s, --sndlib n          sound engine library: 1=wt, 2=fm, 3=hybrid.
 ~~~
 
 The following examples assume the default option USE_44KHZ=ON:
@@ -76,7 +77,7 @@ You may replace "ants.mid" by another MIDI or XMF file, like "test/res/testmxmf.
 
 ## License
 
-Copyright (c) 2022-2024 Pedro López-Cabanillas.
+Copyright (c) 2022-2025 Pedro López-Cabanillas and others.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
