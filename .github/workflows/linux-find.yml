@@ -21,7 +21,7 @@ jobs:
       uses: johnwason/vcpkg-action@v8
       id: vcpkg
       with:
-        pkgs: sonivox
+        pkgs: zlib sonivox
         triplet: x64-linux-release
         token: ${{ github.token }}      
 
